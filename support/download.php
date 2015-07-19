@@ -178,7 +178,7 @@
 	if (!is_dir($stagingpath))  mkdir($stagingpath);
 
 	// Apache.
-	$url = "http://www.apachelounge.com/download/win32/";
+	$url = "http://www.apachelounge.com/download/VC10/";
 	echo "Detecting latest version of Apache:\n";
 	echo "  " . $url . "\n";
 	echo "Please wait...\n";
@@ -195,7 +195,7 @@
 	$rows = $html->find("a[href]");
 	foreach ($rows as $row)
 	{
-		if (preg_match('/^\/download\/win32\/binaries\/httpd-(.+)-win32.zip$/', $row->href, $matches))
+		if (preg_match('/^\/download\/VC10\/binaries\/httpd-(.+)-win32.zip$/', $row->href, $matches))
 		{
 			echo "Found:  " . $row->href . "\n";
 			echo "Latest version:  " . $matches[1] . "\n";
@@ -267,7 +267,12 @@
 
 			$baseurl = $result["url"];
 
-			$url = ConvertRelativeToAbsoluteURL($baseurl, "/mariadb/+files/?release=100");
+			$html2->load($result["body"]);
+			$row2 = $html2->find("#listing", 0);
+
+			$url = $row2->{"data-file-url"} . "?release=" . $row2->{"data-release"};
+
+			$url = ConvertRelativeToAbsoluteURL($baseurl, $url);
 
 			echo "Detecting download:\n";
 			echo "  " . $url . "\n";
@@ -346,7 +351,7 @@
 	$rows = $html->find("a[href]");
 	foreach ($rows as $row)
 	{
-		if (preg_match('/^\/downloads\/releases\/php-(5\.5\.\d+)-Win32-VC11-x86.zip$/', $row->href, $matches))
+		if (preg_match('/^\/downloads\/releases\/php-(5\.6\.\d+)-Win32-VC11-x86.zip$/', $row->href, $matches))
 		{
 			echo "Found:  " . $row->href . "\n";
 			echo "Latest version:  " . $matches[1] . "\n";
