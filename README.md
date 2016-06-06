@@ -28,6 +28,10 @@ To upgrade to the latest version, stop the servers with 'stop_server.bat', run '
 
 To check for the latest version (and bugs in the scraper), run 'check.bat'.
 
+To only install or upgrade one or two of the packages, run 'install.bat' with one or more of these options:  apache, maria_db, php
+
+For example:  upgrade.bat php
+
 Troubleshooting
 ---------------
 

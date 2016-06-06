@@ -19,12 +19,25 @@
 			{
 				if ($file != "." && $file != "..")
 				{
-					if (is_dir($srcdir . "/" . $file))  CopyDirectory($srcdir . "/" . $file, $destdir . "/" . $file);
-					else if (is_file($srcdir . "/" . $file))  @copy($srcdir . "/" . $file, $destdir . "/" . $file);
+					if (is_dir($srcdir . "/" . $file))
+					{
+						$result = CopyDirectory($srcdir . "/" . $file, $destdir . "/" . $file);
+						if (!$result["success"])  return $result;
+					}
+					else if (is_file($srcdir . "/" . $file))
+					{
+						if (!@copy($srcdir . "/" . $file, $destdir . "/" . $file))  return array("success" => false, "error" => "Copying '" . $srcdir . "/" . $file . "' to '" . $destdir . "/" . $file . "' failed.", "errorcode" => "copy_failed");
+					}
 				}
 			}
 
 			closedir($dir);
 		}
+		else
+		{
+			return array("success" => false, "error" => "Unable to open directory '" . $srcdir . "'.", "opendir_failed");
+		}
+
+		return array("success" => true);
 	}
 ?>

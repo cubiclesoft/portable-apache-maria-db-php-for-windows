@@ -5,7 +5,7 @@
 	$basepath = str_replace("\\", "/", dirname(dirname(__FILE__))) . "/";
 
 	// Attempt to detect if everything is installed already.  If so, bail.
-	if (!file_exists($basepath . "php/php.ini"))
+	if ($argc == 1 && !file_exists($basepath . "php/php.ini"))
 	{
 		echo "The installer has not completed.  If you are installing, run 'install.bat' instead.\n";
 

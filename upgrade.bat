@@ -2,6 +2,6 @@
 cls
 
 rem Portable Apache, Maria DB, PHP.
-rem (C) 2013 CubicleSoft.  All Rights Reserved.
+rem (C) 2016 CubicleSoft.  All Rights Reserved.
 
-"support/php/php.exe" support/upgrade.php
+"support/php/php.exe" support/upgrade.php %1 %2 %3

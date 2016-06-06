@@ -177,213 +177,238 @@
 
 	if (!is_dir($stagingpath))  mkdir($stagingpath);
 
+	// Determine if the user is only interested in a specific download.
+	$downloadopts = array();
+	for ($x = 1; $x < $argc; $x++)  $downloadopts[strtolower($argv[$x])] = true;
+	if ($argc == 1)  $downloadopts["apache"] = true;
+	if ($argc == 1)  $downloadopts["maria_db"] = true;
+	if ($argc == 1)  $downloadopts["php"] = true;
+
 	// Apache.
-	$url = "http://www.apachelounge.com/download/VC10/";
-	echo "Detecting latest version of Apache:\n";
-	echo "  " . $url . "\n";
-	echo "Please wait...\n";
-	$web = new WebBrowser();
-	$result = $web->Process($url);
-
-	if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
-	else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
-
-	$baseurl = $result["url"];
-
-	$found = false;
-	$html->load($result["body"]);
-	$rows = $html->find("a[href]");
-	foreach ($rows as $row)
+	if (isset($downloadopts["apache"]))
 	{
-		if (preg_match('/^\/download\/VC10\/binaries\/httpd-(.+)-win32.zip$/', $row->href, $matches))
+		$url = "http://www.apachelounge.com/download/VC10/";
+		echo "Detecting latest version of Apache:\n";
+		echo "  " . $url . "\n";
+		echo "Please wait...\n";
+		$web = new WebBrowser();
+		$result = $web->Process($url);
+
+		if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
+		else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
+
+		$baseurl = $result["url"];
+
+		$found = false;
+		$html->load($result["body"]);
+		$rows = $html->find("a[href]");
+		foreach ($rows as $row)
 		{
-			echo "Found:  " . $row->href . "\n";
-			echo "Latest version:  " . $matches[1] . "\n";
-			echo "Currently installed:  " . (isset($installed["apache"]) ? $installed["apache"] : "Not installed") . "\n";
-			$found = true;
-
-			if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["apache"]) || $matches[1] != $installed["apache"]))
+			if (preg_match('/^\/download\/VC10\/binaries\/httpd-(.+)-win32.zip$/', $row->href, $matches))
 			{
-				DownloadAndExtract("apache", ConvertRelativeToAbsoluteURL($baseurl, $row->href));
+				echo "Found:  " . $row->href . "\n";
+				echo "Latest version:  " . $matches[1] . "\n";
+				echo "Currently installed:  " . (isset($installed["apache"]) ? $installed["apache"] : "Not installed") . "\n";
+				$found = true;
 
-				$extractpath = dirname(FindExtractedFile($stagingpath, "ABOUT_APACHE.txt")) . "/";
-				@copy($installpath . "vc_redist/msvcr100.dll", $extractpath . "bin/msvcr100.dll");
-				@rename($extractpath . "cgi-bin", $extractpath . "orig-cgi-bin");
-				@rename($extractpath . "conf", $extractpath . "orig-conf");
-				@rename($extractpath . "htdocs", $extractpath . "orig-htdocs");
-				@rename($extractpath . "logs", $extractpath . "orig-logs");
-
-				echo "Copying staging files to final location...\n";
-				CopyDirectory($extractpath, $installpath . "apache");
-
-				echo "Cleaning up...\n";
-				ResetStagingArea($stagingpath);
-
-				$installed["apache"] = $matches[1];
-				SaveInstalledData();
-
-				echo "Apache binaries updated to " . $matches[1] . ".\n";
-			}
-
-			break;
-		}
-	}
-	if (!$found)
-	{
-		echo "ERROR:  Unable to find latest Apache verison.  Probably a bug.\n";
-		echo "Currently installed:  " . (isset($installed["apache"]) ? $installed["apache"] : "Not installed") . "\n";
-	}
-
-	// Maria DB.
-	$url = "https://downloads.mariadb.org/";
-	echo "\n";
-	echo "Detecting latest version of Maria DB:\n";
-	echo "  " . $url . "\n";
-	echo "Please wait...\n";
-	$web = new WebBrowser();
-	$result = $web->Process($url);
-
-	if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
-	else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
-
-	$baseurl = $result["url"];
-
-	$found = false;
-	$html->load($result["body"]);
-	$rows = $html->find("a.btn-success");
-	foreach ($rows as $row)
-	{
-		if (preg_match("/^\/mariadb\/(.+)\/$/", $row->href, $matches) && stripos((string)$row->plaintext, "Stable") !== false)
-		{
-			$url = ConvertRelativeToAbsoluteURL($baseurl, $row->href);
-			echo "Detecting download:\n";
-			echo "  " . $url . "\n";
-			echo "Please wait...\n";
-			$web = new WebBrowser();
-			$result = $web->Process($url);
-
-			if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
-			else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
-
-			$baseurl = $result["url"];
-
-			$html2->load($result["body"]);
-			$row2 = $html2->find("#listing", 0);
-
-			$url = $row2->{"data-file-url"} . "?release=" . $row2->{"data-release"};
-
-			$url = ConvertRelativeToAbsoluteURL($baseurl, $url);
-
-			echo "Detecting download:\n";
-			echo "  " . $url . "\n";
-			echo "Please wait...\n";
-			$web = new WebBrowser();
-			$result = $web->Process($url);
-
-			if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
-			else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
-
-			$baseurl = $result["url"];
-
-			$html2->load($result["body"]);
-			$rows2 = $html2->find("a[href]");
-			foreach ($rows2 as $row2)
-			{
-				$filename = trim($row2->plaintext);
-
-				if (preg_match('/^mariadb-(.+)-win32.zip$/', $filename, $matches))
+				if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["apache"]) || $matches[1] != $installed["apache"]))
 				{
-					// Automation hates interstitials.  Just go straight to the download.
-					$row2->href = str_replace("/interstitial/", "/f/", $row2->href);
-					echo "Found:  " . $row2->href . "\n";
-					echo "Latest version:  " . $matches[1] . "\n";
-					echo "Currently installed:  " . (isset($installed["maria_db"]) ? $installed["maria_db"] : "Not installed") . "\n";
-					$found = true;
+					DownloadAndExtract("apache", ConvertRelativeToAbsoluteURL($baseurl, $row->href));
 
-					if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["maria_db"]) || $matches[1] != $installed["maria_db"]))
+					$extractpath = dirname(FindExtractedFile($stagingpath, "ABOUT_APACHE.txt")) . "/";
+					@copy($installpath . "vc_redist/msvcr100.dll", $extractpath . "bin/msvcr100.dll");
+					@rename($extractpath . "cgi-bin", $extractpath . "orig-cgi-bin");
+					@rename($extractpath . "conf", $extractpath . "orig-conf");
+					@rename($extractpath . "htdocs", $extractpath . "orig-htdocs");
+					@rename($extractpath . "logs", $extractpath . "orig-logs");
+
+					echo "Copying staging files to final location...\n";
+					$result2 = CopyDirectory($extractpath, $installpath . "apache");
+					if (!$result2["success"])  echo "ERROR:  Unable to copy files from staging to the final location.  Partial upgrade applied.\n" . $result2["error"] . "\n";
+					else
 					{
-						DownloadAndExtract("maria_db", ConvertRelativeToAbsoluteURL($baseurl, $row2->href));
-
-						$extractpath = dirname(FindExtractedFile($stagingpath, "COPYING")) . "/";
-						@rename($extractpath . "data", $extractpath . "orig-data");
-
-						echo "Copying staging files to final location...\n";
-						CopyDirectory($extractpath, $installpath . "maria_db");
-
 						echo "Cleaning up...\n";
 						ResetStagingArea($stagingpath);
 
-						$installed["maria_db"] = $matches[1];
+						$installed["apache"] = $matches[1];
 						SaveInstalledData();
 
-						echo "Maria DB binaries updated to " . $matches[1] . ".\n";
+						echo "Apache binaries updated to " . $matches[1] . ".\n";
 					}
-
-					break;
 				}
-			}
 
-			break;
+				break;
+			}
+		}
+		if (!$found)
+		{
+			echo "ERROR:  Unable to find latest Apache verison.  Probably a bug.\n";
+			echo "Currently installed:  " . (isset($installed["apache"]) ? $installed["apache"] : "Not installed") . "\n";
 		}
 	}
-	if (!$found)
+
+	// Maria DB.
+	if (isset($downloadopts["maria_db"]))
 	{
-		echo "ERROR:  Unable to find latest Maria DB verison.  Probably a bug.\n";
-		echo "Currently installed:  " . (isset($installed["maria_db"]) ? $installed["maria_db"] : "Not installed") . "\n";
+		$url = "https://downloads.mariadb.org/";
+		echo "\n";
+		echo "Detecting latest version of Maria DB:\n";
+		echo "  " . $url . "\n";
+		echo "Please wait...\n";
+		$web = new WebBrowser();
+		$result = $web->Process($url);
+
+		if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
+		else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
+
+		$baseurl = $result["url"];
+
+		$found = false;
+		$html->load($result["body"]);
+		$rows = $html->find("a.btn-success");
+		foreach ($rows as $row)
+		{
+			if (preg_match("/^\/mariadb\/(.+)\/$/", $row->href, $matches) && stripos((string)$row->plaintext, "Stable") !== false)
+			{
+				$url = ConvertRelativeToAbsoluteURL($baseurl, $row->href);
+				echo "Detecting download:\n";
+				echo "  " . $url . "\n";
+				echo "Please wait...\n";
+				$web = new WebBrowser();
+				$result = $web->Process($url);
+
+				if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
+				else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
+
+				$baseurl = $result["url"];
+
+				$html2->load($result["body"]);
+				$row2 = $html2->find("#listing", 0);
+
+				$url = $row2->{"data-file-url"} . "?release=" . $row2->{"data-release"};
+
+				$url = ConvertRelativeToAbsoluteURL($baseurl, $url);
+
+				echo "Detecting download:\n";
+				echo "  " . $url . "\n";
+				echo "Please wait...\n";
+				$web = new WebBrowser();
+				$result = $web->Process($url);
+
+				if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
+				else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
+
+				$baseurl = $result["url"];
+
+				$html2->load($result["body"]);
+				$rows2 = $html2->find("a[href]");
+				foreach ($rows2 as $row2)
+				{
+					$filename = trim($row2->plaintext);
+
+					if (preg_match('/^mariadb-(.+)-win32.zip$/', $filename, $matches))
+					{
+						// Automation hates interstitials.  Just go straight to the download.
+						$row2->href = str_replace("/interstitial/", "/f/", $row2->href);
+						echo "Found:  " . $row2->href . "\n";
+						echo "Latest version:  " . $matches[1] . "\n";
+						echo "Currently installed:  " . (isset($installed["maria_db"]) ? $installed["maria_db"] : "Not installed") . "\n";
+						$found = true;
+
+						if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["maria_db"]) || $matches[1] != $installed["maria_db"]))
+						{
+							DownloadAndExtract("maria_db", ConvertRelativeToAbsoluteURL($baseurl, $row2->href));
+
+							$extractpath = dirname(FindExtractedFile($stagingpath, "COPYING")) . "/";
+							@rename($extractpath . "data", $extractpath . "orig-data");
+
+							echo "Copying staging files to final location...\n";
+							$result2 = CopyDirectory($extractpath, $installpath . "maria_db");
+							if (!$result2["success"])  echo "ERROR:  Unable to copy files from staging to the final location.  Partial upgrade applied.\n" . $result2["error"] . "\n";
+							else
+							{
+								echo "Cleaning up...\n";
+								ResetStagingArea($stagingpath);
+
+								$installed["maria_db"] = $matches[1];
+								SaveInstalledData();
+
+								echo "Maria DB binaries updated to " . $matches[1] . ".\n";
+							}
+						}
+
+						break;
+					}
+				}
+
+				break;
+			}
+		}
+		if (!$found)
+		{
+			echo "ERROR:  Unable to find latest Maria DB verison.  Probably a bug.\n";
+			echo "Currently installed:  " . (isset($installed["maria_db"]) ? $installed["maria_db"] : "Not installed") . "\n";
+		}
 	}
 
 	// PHP.
-	$url = "http://windows.php.net/download/";
-	echo "\n";
-	echo "Detecting latest version of PHP:\n";
-	echo "  " . $url . "\n";
-	echo "Please wait...\n";
-	$web = new WebBrowser();
-	$result = $web->Process($url);
-
-	if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
-	else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
-
-	$baseurl = $result["url"];
-
-	$found = false;
-	$html->load($result["body"]);
-	$rows = $html->find("a[href]");
-	foreach ($rows as $row)
+	if (isset($downloadopts["php"]))
 	{
-		if (preg_match('/^\/downloads\/releases\/php-(5\.6\.\d+)-Win32-VC11-x86.zip$/', $row->href, $matches))
+		$url = "http://windows.php.net/download/";
+		echo "\n";
+		echo "Detecting latest version of PHP:\n";
+		echo "  " . $url . "\n";
+		echo "Please wait...\n";
+		$web = new WebBrowser();
+		$result = $web->Process($url);
+
+		if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
+		else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
+
+		$baseurl = $result["url"];
+
+		$found = false;
+		$html->load($result["body"]);
+		$rows = $html->find("a[href]");
+		foreach ($rows as $row)
 		{
-			echo "Found:  " . $row->href . "\n";
-			echo "Latest version:  " . $matches[1] . "\n";
-			echo "Currently installed:  " . (isset($installed["php"]) ? $installed["php"] : "Not installed") . "\n";
-			$found = true;
-
-			if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["php"]) || $matches[1] != $installed["php"]))
+			if (preg_match('/^\/downloads\/releases\/php-(5\.6\.\d+)-Win32-VC11-x86.zip$/', $row->href, $matches))
 			{
-				DownloadAndExtract("php", ConvertRelativeToAbsoluteURL($baseurl, $row->href));
+				echo "Found:  " . $row->href . "\n";
+				echo "Latest version:  " . $matches[1] . "\n";
+				echo "Currently installed:  " . (isset($installed["php"]) ? $installed["php"] : "Not installed") . "\n";
+				$found = true;
 
-				$extractpath = dirname(FindExtractedFile($stagingpath, "php.exe")) . "/";
-				@copy($installpath . "vc_redist/msvcr110.dll", $extractpath . "bin/msvcr110.dll");
+				if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["php"]) || $matches[1] != $installed["php"]))
+				{
+					DownloadAndExtract("php", ConvertRelativeToAbsoluteURL($baseurl, $row->href));
 
-				echo "Copying staging files to final location...\n";
-				CopyDirectory($extractpath, $installpath . "php");
+					$extractpath = dirname(FindExtractedFile($stagingpath, "php.exe")) . "/";
+					@copy($installpath . "vc_redist/msvcr110.dll", $extractpath . "bin/msvcr110.dll");
 
-				echo "Cleaning up...\n";
-				ResetStagingArea($stagingpath);
+					echo "Copying staging files to final location...\n";
+					$result2 = CopyDirectory($extractpath, $installpath . "php");
+					if (!$result2["success"])  echo "ERROR:  Unable to copy files from staging to the final location.  Partial upgrade applied.\n" . $result2["error"] . "\n";
+					else
+					{
+						echo "Cleaning up...\n";
+						ResetStagingArea($stagingpath);
 
-				$installed["php"] = $matches[1];
-				SaveInstalledData();
+						$installed["php"] = $matches[1];
+						SaveInstalledData();
 
-				echo "PHP binaries updated to " . $matches[1] . ".\n\n";
+						echo "PHP binaries updated to " . $matches[1] . ".\n\n";
+					}
+				}
+
+				break;
 			}
-
-			break;
 		}
-	}
-	if (!$found)
-	{
-		echo "ERROR:  Unable to find latest PHP verison.  Probably a bug.\n";
-		echo "Currently installed:  " . (isset($installed["php"]) ? $installed["php"] : "Not installed") . "\n";
+		if (!$found)
+		{
+			echo "ERROR:  Unable to find latest PHP verison.  Probably a bug.\n";
+			echo "Currently installed:  " . (isset($installed["php"]) ? $installed["php"] : "Not installed") . "\n";
+		}
 	}
 
 	ResetStagingArea($stagingpath);
