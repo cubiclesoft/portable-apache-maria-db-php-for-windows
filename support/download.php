@@ -187,7 +187,7 @@
 	// Apache.
 	if (isset($downloadopts["apache"]))
 	{
-		$url = "http://www.apachelounge.com/download/VC10/";
+		$url = "http://www.apachelounge.com/download/";
 		echo "Detecting latest version of Apache:\n";
 		echo "  " . $url . "\n";
 		echo "Please wait...\n";
@@ -204,7 +204,7 @@
 		$rows = $html->find("a[href]");
 		foreach ($rows as $row)
 		{
-			if (preg_match('/^\/download\/VC10\/binaries\/httpd-(.+)-win32.zip$/', $row->href, $matches))
+			if (preg_match('/^\/download\/VC14\/binaries\/httpd-(.+)-win32-VC14.zip$/', $row->href, $matches))
 			{
 				echo "Found:  " . $row->href . "\n";
 				echo "Latest version:  " . $matches[1] . "\n";
@@ -213,10 +213,10 @@
 
 				if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["apache"]) || $matches[1] != $installed["apache"]))
 				{
-					DownloadAndExtract("apache", ConvertRelativeToAbsoluteURL($baseurl, $row->href));
+					DownloadAndExtract("apache", HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row->href));
 
 					$extractpath = dirname(FindExtractedFile($stagingpath, "ABOUT_APACHE.txt")) . "/";
-					@copy($installpath . "vc_redist/msvcr100.dll", $extractpath . "bin/msvcr100.dll");
+					@copy($installpath . "vc_redist/vcruntime140.dll", $extractpath . "bin/vcruntime140.dll");
 					@rename($extractpath . "cgi-bin", $extractpath . "orig-cgi-bin");
 					@rename($extractpath . "conf", $extractpath . "orig-conf");
 					@rename($extractpath . "htdocs", $extractpath . "orig-htdocs");
@@ -270,7 +270,7 @@
 		{
 			if (preg_match("/^\/mariadb\/(.+)\/$/", $row->href, $matches) && stripos((string)$row->plaintext, "Stable") !== false)
 			{
-				$url = ConvertRelativeToAbsoluteURL($baseurl, $row->href);
+				$url = HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row->href);
 				echo "Detecting download:\n";
 				echo "  " . $url . "\n";
 				echo "Please wait...\n";
@@ -287,7 +287,7 @@
 
 				$url = $row2->{"data-file-url"} . "?release=" . $row2->{"data-release"};
 
-				$url = ConvertRelativeToAbsoluteURL($baseurl, $url);
+				$url = HTTP::ConvertRelativeToAbsoluteURL($baseurl, $url);
 
 				echo "Detecting download:\n";
 				echo "  " . $url . "\n";
@@ -317,7 +317,7 @@
 
 						if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["maria_db"]) || $matches[1] != $installed["maria_db"]))
 						{
-							DownloadAndExtract("maria_db", ConvertRelativeToAbsoluteURL($baseurl, $row2->href));
+							DownloadAndExtract("maria_db", HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row2->href));
 
 							$extractpath = dirname(FindExtractedFile($stagingpath, "COPYING")) . "/";
 							@rename($extractpath . "data", $extractpath . "orig-data");
@@ -372,7 +372,7 @@
 		$rows = $html->find("a[href]");
 		foreach ($rows as $row)
 		{
-			if (preg_match('/^\/downloads\/releases\/php-(5\.6\.\d+)-Win32-VC11-x86.zip$/', $row->href, $matches))
+			if (preg_match('/^\/downloads\/releases\/php-(7\.1\.\d+)-Win32-VC14-x86.zip$/', $row->href, $matches))
 			{
 				echo "Found:  " . $row->href . "\n";
 				echo "Latest version:  " . $matches[1] . "\n";
@@ -381,10 +381,10 @@
 
 				if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["php"]) || $matches[1] != $installed["php"]))
 				{
-					DownloadAndExtract("php", ConvertRelativeToAbsoluteURL($baseurl, $row->href));
+					DownloadAndExtract("php", HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row->href));
 
 					$extractpath = dirname(FindExtractedFile($stagingpath, "php.exe")) . "/";
-					@copy($installpath . "vc_redist/msvcr110.dll", $extractpath . "bin/msvcr110.dll");
+					@copy($installpath . "vc_redist/vcruntime140.dll", $extractpath . "bin/vcruntime140.dll");
 
 					echo "Copying staging files to final location...\n";
 					$result2 = CopyDirectory($extractpath, $installpath . "php");

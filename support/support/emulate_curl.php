@@ -1,12 +1,14 @@
 <?php
 	// CubicleSoft PHP HTTP cURL emulation functions.
-	// (C) 2012 CubicleSoft.  All Rights Reserved.
+	// (C) 2016 CubicleSoft.  All Rights Reserved.
 
 	// cURL HTTP emulation support requires:
 	//   The CubicleSoft PHP HTTP functions.
 	//   The CubicleSoft Web Browser state emulation class.
 	if (!function_exists("curl_init"))
 	{
+		if (!class_exists("HTTP", false))  require_once str_replace("\\", "/", dirname(__FILE__)) . "/http.php";
+
 		global $curl_error__map, $curl_init__map, $curl_multi_init__map;
 
 		// Constants based on PHP 5.4.0 and libcurl 7.25.0.
@@ -376,7 +378,7 @@
 			global $curl_init__map;
 
 			$key = get_curl_init_key($ch);
-			if (!isset($curl_init__map[$key]))  throw new Exception(HTTPTranslate("cURL Emulator:  Unable to find key mapping for resource."));
+			if (!isset($curl_init__map[$key]))  throw new Exception(HTTP::HTTPTranslate("cURL Emulator:  Unable to find key mapping for resource."));
 
 			return $key;
 		}
@@ -418,6 +420,8 @@
 				CURLOPT_MAXREDIRS => 20,
 				CURLOPT_URL => $url
 			);
+
+			if (!class_exists("WebBrowser", false))  require_once str_replace("\\", "/", dirname(__FILE__)) . "/web_browser.php";
 
 			$curl_init__map[$key] = array("self" => $ch, "method" => "GET", "options" => $options, "browser" => new WebBrowser(), "errorno" => CURLE_OK, "errorinfo" => "");
 
@@ -588,7 +592,7 @@
 				if (isset($curl_init__map[$key]["options"][CURLOPT_PROXYTYPE]) && $curl_init__map[$key]["options"][CURLOPT_PROXYTYPE] != CURLPROXY_HTTP)
 				{
 					$curl_init__map[$key]["errorno"] = CURLE_UNSUPPORTED_PROTOCOL;
-					$curl_init__map[$key]["errorinfo"] = HTTPTranslate("CURLOPT_PROXYTYPE option is unsupported.");
+					$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("CURLOPT_PROXYTYPE option is unsupported.");
 
 					return false;
 				}
@@ -598,7 +602,7 @@
 				if ($proxyport < 1 || $proxyport > 65535)  $proxyport = false;
 				if (strpos($proxyurl, "://") === false)  $proxyurl = ($proxyport == 443 ? "https://" : "http://") . $proxyurl;
 
-				$proxyurl = ExtractURL($proxyurl);
+				$proxyurl = HTTP::ExtractURL($proxyurl);
 				if ($proxyport !== false)  $proxyurl["port"] = $proxyport;
 				if (isset($curl_init__map[$key]["options"][CURLOPT_PROXYUSERPWD]))
 				{
@@ -609,7 +613,7 @@
 						$proxyurl["loginpassword"] = urldecode($userpass[1]);
 					}
 				}
-				$options["proxyurl"] = CondenseURL($proxyurl);
+				$options["proxyurl"] = HTTP::CondenseURL($proxyurl);
 
 				if (isset($curl_init__map[$key]["options"][CURLOPT_HTTPPROXYTUNNEL]))  $options["proxyconnect"] = $curl_init__map[$key]["options"][CURLOPT_HTTPPROXYTUNNEL];
 			}
@@ -625,7 +629,7 @@
 				if ($curl_init__map[$key]["options"][CURLOPT_SSLCERT] !== $curl_init__map[$key]["options"][CURLOPT_SSLKEY])
 				{
 					$curl_init__map[$key]["errorno"] = CURLE_SSL_CONNECT_ERROR;
-					$curl_init__map[$key]["errorinfo"] = HTTPTranslate("CURLOPT_SSLCERT and CURLOPT_SSLKEY must be identical.");
+					$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("CURLOPT_SSLCERT and CURLOPT_SSLKEY must be identical.");
 
 					return false;
 				}
@@ -634,7 +638,7 @@
 				if ($certpass !== $keypass)
 				{
 					$curl_init__map[$key]["errorno"] = CURLE_SSL_CONNECT_ERROR;
-					$curl_init__map[$key]["errorinfo"] = HTTPTranslate("CURLOPT_SSLCERTPASSWD and CURLOPT_SSLKEYPASSWD must be identical.");
+					$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("CURLOPT_SSLCERTPASSWD and CURLOPT_SSLKEYPASSWD must be identical.");
 
 					return false;
 				}
@@ -643,7 +647,7 @@
 				if ($certpass !== $keypass || $cert !== "PEM")
 				{
 					$curl_init__map[$key]["errorno"] = CURLE_SSL_CONNECT_ERROR;
-					$curl_init__map[$key]["errorinfo"] = HTTPTranslate("CURLOPT_SSLCERTTYPE and CURLOPT_SSLKEYTYPE must be PEM format.");
+					$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("CURLOPT_SSLCERTTYPE and CURLOPT_SSLKEYTYPE must be PEM format.");
 
 					return false;
 				}
@@ -682,8 +686,8 @@
 					if ($pos !== false)
 					{
 						$val = ltrim(substr($header, $pos + 1));
-						if ($val == "")  unset($options["headers"][HTTPHeaderNameCleanup(substr($header, 0, $pos))]);
-						else  $options["headers"][HTTPHeaderNameCleanup(substr($header, 0, $pos))] = $val;
+						if ($val == "")  unset($options["headers"][HTTP::HeaderNameCleanup(substr($header, 0, $pos))]);
+						else  $options["headers"][HTTP::HeaderNameCleanup(substr($header, 0, $pos))] = $val;
 					}
 				}
 			}
@@ -748,7 +752,7 @@
 								if (!isset($options["files"]))  $options["files"] = array();
 								$options["files"][] = array(
 									"name" => $name,
-									"filename" => HTTPFilenameSafe(HTTPExtractFilename($val)),
+									"filename" => HTTP::FilenameSafe(HTTP::ExtractFilename($val)),
 									"type" => $mimetype,
 									"datafile" => $val
 								);
@@ -770,22 +774,22 @@
 			if (!isset($curl_init__map[$key]["options"][CURLOPT_URL]) || !is_string($curl_init__map[$key]["options"][CURLOPT_URL]) || $curl_init__map[$key]["options"][CURLOPT_URL] == "")
 			{
 				$curl_init__map[$key]["errorno"] = CURLE_URL_MALFORMAT;
-				$curl_init__map[$key]["errorinfo"] = HTTPTranslate("No CURLOPT_URL option specified.");
+				$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("No CURLOPT_URL option specified.");
 
 				return false;
 			}
-			$url = ExtractURL($curl_init__map[$key]["options"][CURLOPT_URL]);
+			$url = HTTP::ExtractURL($curl_init__map[$key]["options"][CURLOPT_URL]);
 			if ($url["scheme"] == "")
 			{
 				$curl_init__map[$key]["errorno"] = CURLE_URL_MALFORMAT;
-				$curl_init__map[$key]["errorinfo"] = HTTPTranslate("CURLOPT_URL does not have a scheme.");
+				$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("CURLOPT_URL does not have a scheme.");
 
 				return false;
 			}
 			if ($url["host"] == "")
 			{
 				$curl_init__map[$key]["errorno"] = CURLE_URL_MALFORMAT;
-				$curl_init__map[$key]["errorinfo"] = HTTPTranslate("CURLOPT_URL does not specify a valid host.");
+				$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("CURLOPT_URL does not specify a valid host.");
 
 				return false;
 			}
@@ -837,7 +841,7 @@
 			}
 
 			// Condense URL.
-			$url = CondenseURL($url);
+			$url = HTTP::CondenseURL($url);
 
 			// Set up internal callbacks.
 			$options["read_headers_callback"] = "internal_curl_read_headers_callback";
@@ -890,89 +894,89 @@
 				if ($result["errorcode"] == "allowed_protocols")
 				{
 					$curl_init__map[$key]["errorno"] = CURLE_UNSUPPORTED_PROTOCOL;
-					$curl_init__map[$key]["errorinfo"] = HTTPTranslate("The cURL emulation layer does not support the protocol or was redirected to an unsupported protocol by the host.  %s", $result["error"]);
+					$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("The cURL emulation layer does not support the protocol or was redirected to an unsupported protocol by the host.  %s", $result["error"]);
 				}
 				else if ($result["errorcode"] == "allowed_redir_protocols")
 				{
 					$curl_init__map[$key]["errorno"] = CURLE_UNSUPPORTED_PROTOCOL;
-					$curl_init__map[$key]["errorinfo"] = HTTPTranslate("The cURL emulation layer was redirected to an unsupported protocol by the host.  %s", $result["error"]);
+					$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("The cURL emulation layer was redirected to an unsupported protocol by the host.  %s", $result["error"]);
 				}
 				else if ($result["errorcode"] == "retrievewebpage")
 				{
 					if ($result["info"]["errorcode"] == "timeout_exceeded")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_OPERATION_TIMEDOUT;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("The operation timed out.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("The operation timed out.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "get_response_line")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_READ_ERROR;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("Unable to get the response line.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("Unable to get the response line.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "read_header_callback")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_READ_ERROR;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("A read error occurred in the read header callback.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("A read error occurred in the read header callback.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "read_body_callback")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_READ_ERROR;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("A read error occurred in the read body callback.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("A read error occurred in the read body callback.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "function_check")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_FUNCTION_NOT_FOUND;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("A required function was not found.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("A required function was not found.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "protocol_check")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_UNSUPPORTED_PROTOCOL;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("The cURL emulation layer does not support the protocol or was redirected to an unsupported protocol by the host.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("The cURL emulation layer does not support the protocol or was redirected to an unsupported protocol by the host.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "transport_not_installed")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_NOT_BUILT_IN;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("The cURL emulation layer attempted to use a required transport to connect to a host but failed.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("The cURL emulation layer attempted to use a required transport to connect to a host but failed.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "proxy_transport_not_installed")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_NOT_BUILT_IN;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("The cURL emulation layer attempted to use a required transport to connect to a proxy but failed.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("The cURL emulation layer attempted to use a required transport to connect to a proxy but failed.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "proxy_connect")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_COULDNT_CONNECT;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("Unable to connect to the proxy.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("Unable to connect to the proxy.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "proxy_connect_tunnel")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_COULDNT_CONNECT;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("Unable to open a tunnel through the connected proxy.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("Unable to open a tunnel through the connected proxy.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "connect_failed")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_COULDNT_CONNECT;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("Unable to connect to the host.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("Unable to connect to the host.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "write_body_callback")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_WRITE_ERROR;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("A write error occurred in the write body callback.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("A write error occurred in the write body callback.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "file_open")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_FILE_COULDNT_READ_FILE;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("Unable to open file for upload.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("Unable to open file for upload.  %s", $result["error"]);
 					}
 					else if ($result["info"]["errorcode"] == "file_read")
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_READ_ERROR;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("A read error occurred while uploading a file.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("A read error occurred while uploading a file.  %s", $result["error"]);
 					}
 					else
 					{
 						$curl_init__map[$key]["errorno"] = CURLE_HTTP_RETURNED_ERROR;
-						$curl_init__map[$key]["errorinfo"] = HTTPTranslate("An error occurred.  %s", $result["error"]);
+						$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("An error occurred.  %s", $result["error"]);
 					}
 				}
 
@@ -982,7 +986,7 @@
 			if (isset($curl_init__map[$key]["returnresponse"]) && $curl_init__map[$key]["returnresponse"]["code"] >= 400 && isset($curl_init__map[$key]["options"][CURLOPT_FAILONERROR]) && $curl_init__map[$key]["options"][CURLOPT_FAILONERROR])
 			{
 				$curl_init__map[$key]["errorno"] = CURLE_HTTP_RETURNED_ERROR;
-				$curl_init__map[$key]["errorinfo"] = HTTPTranslate("A HTTP error occurred.  %s", $curl_init__map[$key]["returnresponse"]["line"]);
+				$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("A HTTP error occurred.  %s", $curl_init__map[$key]["returnresponse"]["line"]);
 
 				return false;
 			}
@@ -990,7 +994,7 @@
 			if (isset($curl_init__map[$key]["options"][CURLOPT_FOLLOWLOCATION]) && $curl_init__map[$key]["options"][CURLOPT_FOLLOWLOCATION] && isset($result["headers"]["Location"]))
 			{
 				$curl_init__map[$key]["errorno"] = CURLE_TOO_MANY_REDIRECTS;
-				$curl_init__map[$key]["errorinfo"] = HTTPTranslate("Too many redirects took place.");
+				$curl_init__map[$key]["errorinfo"] = HTTP::HTTPTranslate("Too many redirects took place.");
 
 				return false;
 			}
@@ -1014,7 +1018,7 @@
 			{
 				if (isset($curl_init__map[$key]["options"][CURLOPT_CERTINFO]) && $curl_init__map[$key]["options"][CURLOPT_CERTINFO])
 				{
-					echo HTTPTranslate("Proxy SSL Certificate:\n");
+					echo HTTP::HTTPTranslate("Proxy SSL Certificate:\n");
 					var_dump($data);
 					echo "\n";
 				}
@@ -1023,7 +1027,7 @@
 			{
 				if (isset($curl_init__map[$key]["options"][CURLOPT_CERTINFO]) && $curl_init__map[$key]["options"][CURLOPT_CERTINFO])
 				{
-					echo HTTPTranslate("Peer SSL Certificate:\n");
+					echo HTTP::HTTPTranslate("Peer SSL Certificate:\n");
 					var_dump($data);
 					echo "\n";
 				}
@@ -1034,7 +1038,7 @@
 				{
 					$curl_init__map[$key]["rawproxyheaders"] = $data;
 
-					echo HTTPTranslate("Raw Proxy Headers:\n");
+					echo HTTP::HTTPTranslate("Raw Proxy Headers:\n");
 					echo $data;
 				}
 			}
@@ -1044,18 +1048,18 @@
 				{
 					$curl_init__map[$key]["rawheaders"] = $data;
 
-					echo HTTPTranslate("Raw Headers:\n");
+					echo HTTP::HTTPTranslate("Raw Headers:\n");
 					echo $data;
 				}
 			}
 			else if ($type == "rawsend")
 			{
-				echo HTTPTranslate("Sent:\n");
+				echo HTTP::HTTPTranslate("Sent:\n");
 				echo $data;
 			}
 			else if ($type == "rawrecv")
 			{
-				echo HTTPTranslate("Received:\n");
+				echo HTTP::HTTPTranslate("Received:\n");
 				echo $data;
 				echo "\n";
 			}
@@ -1089,7 +1093,7 @@
 				{
 					if (isset($curl_init__map[$key]["options"][CURLOPT_VERBOSE]) && $curl_init__map[$key]["options"][CURLOPT_VERBOSE])
 					{
-						$output = HTTPTranslate("An error occurred in the read function callback while reading the data to send/upload to the host.");
+						$output = HTTP::HTTPTranslate("An error occurred in the read function callback while reading the data to send/upload to the host.");
 
 						if (isset($curl_init__map[$key]["options"][CURLOPT_STDERR]) && is_resource($curl_init__map[$key]["options"][CURLOPT_STDERR]))  fwrite($curl_init__map[$key]["options"][CURLOPT_STDERR], $output);
 						else if (defined("STDERR"))  fwrite(STDERR, $output);
@@ -1108,7 +1112,7 @@
 				{
 					if (isset($curl_init__map[$key]["options"][CURLOPT_VERBOSE]) && $curl_init__map[$key]["options"][CURLOPT_VERBOSE])
 					{
-						$output = HTTPTranslate("An error occurred while reading the data to send/upload to the host.");
+						$output = HTTP::HTTPTranslate("An error occurred while reading the data to send/upload to the host.");
 
 						if (isset($curl_init__map[$key]["options"][CURLOPT_STDERR]) && is_resource($curl_init__map[$key]["options"][CURLOPT_STDERR]))  fwrite($curl_init__map[$key]["options"][CURLOPT_STDERR], $output);
 						else if (defined("STDERR"))  fwrite(STDERR, $output);
@@ -1145,9 +1149,9 @@
 			{
 				if (isset($curl_init__map[$key]["options"][CURLOPT_VERBOSE]) && $curl_init__map[$key]["options"][CURLOPT_VERBOSE])
 				{
-					if (isset($curl_init__map[$key]["options"][CURLOPT_STDERR]) && is_resource($curl_init__map[$key]["options"][CURLOPT_STDERR]))  fwrite($curl_init__map[$key]["options"][CURLOPT_STDERR], HTTPTranslate("Header:\n") . $data);
-					else if (defined("STDERR"))  fwrite(STDERR, HTTPTranslate("Header:\n") . $data);
-					else  echo HTTPTranslate("Header:\n") . $data;
+					if (isset($curl_init__map[$key]["options"][CURLOPT_STDERR]) && is_resource($curl_init__map[$key]["options"][CURLOPT_STDERR]))  fwrite($curl_init__map[$key]["options"][CURLOPT_STDERR], HTTP::HTTPTranslate("Header:\n") . $data);
+					else if (defined("STDERR"))  fwrite(STDERR, HTTP::HTTPTranslate("Header:\n") . $data);
+					else  echo HTTP::HTTPTranslate("Header:\n") . $data;
 				}
 			}
 
@@ -1201,9 +1205,9 @@
 
 				if (isset($curl_init__map[$key]["options"][CURLOPT_VERBOSE]) && $curl_init__map[$key]["options"][CURLOPT_VERBOSE])
 				{
-					if (isset($curl_init__map[$key]["options"][CURLOPT_STDERR]) && is_resource($curl_init__map[$key]["options"][CURLOPT_STDERR]))  fwrite($curl_init__map[$key]["options"][CURLOPT_STDERR], HTTPTranslate("Body:\n") . $data);
-					else if (defined("STDERR"))  fwrite(STDERR, HTTPTranslate("Body:\n") . $data);
-					else  echo HTTPTranslate("Body:\n") . $data;
+					if (isset($curl_init__map[$key]["options"][CURLOPT_STDERR]) && is_resource($curl_init__map[$key]["options"][CURLOPT_STDERR]))  fwrite($curl_init__map[$key]["options"][CURLOPT_STDERR], HTTP::HTTPTranslate("Body:\n") . $data);
+					else if (defined("STDERR"))  fwrite(STDERR, HTTP::HTTPTranslate("Body:\n") . $data);
+					else  echo HTTP::HTTPTranslate("Body:\n") . $data;
 				}
 
 				if (isset($curl_init__map[$key]["options"][CURLOPT_WRITEFUNCTION]) && $curl_init__map[$key]["options"][CURLOPT_WRITEFUNCTION])
@@ -1214,7 +1218,7 @@
 					{
 						if (isset($curl_init__map[$key]["options"][CURLOPT_VERBOSE]) && $curl_init__map[$key]["options"][CURLOPT_VERBOSE])
 						{
-							$output = HTTPTranslate("An error occurred in the write function callback while writing the data received from the host.");
+							$output = HTTP::HTTPTranslate("An error occurred in the write function callback while writing the data received from the host.");
 
 							if (isset($curl_init__map[$key]["options"][CURLOPT_STDERR]) && is_resource($curl_init__map[$key]["options"][CURLOPT_STDERR]))  fwrite($curl_init__map[$key]["options"][CURLOPT_STDERR], $output);
 							else if (defined("STDERR"))  fwrite(STDERR, $output);
@@ -1243,7 +1247,7 @@
 				"http_code" => (isset($curl_init__map[$key]["lastresult"]["response"]) && isset($curl_init__map[$key]["lastresult"]["response"]["code"]) ? (int)$curl_init__map[$key]["lastresult"]["response"]["code"] : null),
 				"header_size" => (isset($curl_init__map[$key]["lastresult"]["rawrecvheadersize"]) ? $curl_init__map[$key]["lastresult"]["rawrecvheadersize"] : 0),
 				"request_size" => (isset($curl_init__map[$key]["lastresult"]["totalrawsendsize"]) ? $curl_init__map[$key]["lastresult"]["totalrawsendsize"] : 0),
-				"filetime" => (isset($curl_init__map[$key]["options"][CURLOPT_FILETIME]) && $curl_init__map[$key]["options"][CURLOPT_FILETIME] && isset($curl_init__map[$key]["lastresult"]["headers"]) && isset($curl_init__map[$key]["lastresult"]["headers"]["Last-Modified"]) ? GetHTTPDateTimestamp($curl_init__map[$key]["lastresult"]["headers"]["Last-Modified"][0]) : -1),
+				"filetime" => (isset($curl_init__map[$key]["options"][CURLOPT_FILETIME]) && $curl_init__map[$key]["options"][CURLOPT_FILETIME] && isset($curl_init__map[$key]["lastresult"]["headers"]) && isset($curl_init__map[$key]["lastresult"]["headers"]["Last-Modified"]) ? HTTP::GetDateTimestamp($curl_init__map[$key]["lastresult"]["headers"]["Last-Modified"][0]) : -1),
 				"ssl_verify_result" => 0,
 				"redirect_count" => (isset($curl_init__map[$key]["lastresult"]["numredirects"]) ? $curl_init__map[$key]["lastresult"]["numredirects"] : 0),
 				"total_time" => (isset($curl_init__map[$key]["lastresult"]["startts"]) && isset($curl_init__map[$key]["lastresult"]["endts"]) ? $curl_init__map[$key]["lastresult"]["endts"] - $curl_init__map[$key]["lastresult"]["startts"] : 0),
@@ -1307,7 +1311,7 @@
 			global $curl_init__map;
 
 			$key = get_curl_multi_init_key($ch);
-			if (!isset($curl_multi_init__map[$key]))  throw new Exception(HTTPTranslate("cURL Emulator:  Unable to find key mapping for resource."));
+			if (!isset($curl_multi_init__map[$key]))  throw new Exception(HTTP::HTTPTranslate("cURL Emulator:  Unable to find key mapping for resource."));
 
 			return $key;
 		}
