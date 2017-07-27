@@ -116,7 +116,7 @@
 			$fp = fopen($stagingpath . $installkey . "/" . $name, "wb");
 			while ($size > 1000000)
 			{
-				fwrite($fp, zip_entry_read($zipentry, $size));
+				fwrite($fp, zip_entry_read($zipentry, 1000000));
 				$size -= 1000000;
 			}
 			if ($size > 0)  fwrite($fp, zip_entry_read($zipentry, $size));
@@ -187,7 +187,7 @@
 	// Apache.
 	if (isset($downloadopts["apache"]))
 	{
-		$url = "http://www.apachelounge.com/download/";
+		$url = "http://www.apachelounge.com/download/VC14/";
 		echo "Detecting latest version of Apache:\n";
 		echo "  " . $url . "\n";
 		echo "Please wait...\n";
