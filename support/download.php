@@ -75,7 +75,7 @@
 			"read_body_callback" => "DownloadAndExtract_Callback",
 			"read_body_callback_opts" => $fp
 		);
-		$result = $web2->Process($url, "auto", $options);
+		$result = $web2->Process($url, $options);
 		fclose($fp);
 
 		if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
