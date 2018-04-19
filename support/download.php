@@ -384,7 +384,7 @@
 					DownloadAndExtract("php", HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row->href));
 
 					$extractpath = dirname(FindExtractedFile($stagingpath, "php.exe")) . "/";
-					copy($installpath . "vc_redist/vcruntime140.dll", $extractpath . "bin/vcruntime140.dll");
+					copy($installpath . "vc_redist/vcruntime140.dll", $extractpath . "vcruntime140.dll");
 
 					echo "Copying staging files to final location...\n";
 					$result2 = CopyDirectory($extractpath, $installpath . "php");
