@@ -7,6 +7,8 @@ If XAMPP and similar incarnations are not really your style (e.g. you prefer the
 
 GitHub is a perfect fit for this sort of project.  The latest code resides here, so updating is a matter of running a 'git pull'.  Set up a Task Scheduler job to update this project automatically or use it as a submodule in your own Git project.  If you know of any changes that need to be made, submit a pull request so that everyone benefits.
 
+[![Donate](https://cubiclesoft.com/res/donate-shield.png)](https://cubiclesoft.com/donate/)
+
 Features
 --------
 

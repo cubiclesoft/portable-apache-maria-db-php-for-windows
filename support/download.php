@@ -216,7 +216,7 @@
 					DownloadAndExtract("apache", HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row->href));
 
 					$extractpath = dirname(FindExtractedFile($stagingpath, "ABOUT_APACHE.txt")) . "/";
-					@copy($installpath . "vc_redist/vcruntime140.dll", $extractpath . "bin/vcruntime140.dll");
+					copy($installpath . "vc_redist/vcruntime140.dll", $extractpath . "bin/vcruntime140.dll");
 					@rename($extractpath . "cgi-bin", $extractpath . "orig-cgi-bin");
 					@rename($extractpath . "conf", $extractpath . "orig-conf");
 					@rename($extractpath . "htdocs", $extractpath . "orig-htdocs");
@@ -384,7 +384,7 @@
 					DownloadAndExtract("php", HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row->href));
 
 					$extractpath = dirname(FindExtractedFile($stagingpath, "php.exe")) . "/";
-					@copy($installpath . "vc_redist/vcruntime140.dll", $extractpath . "bin/vcruntime140.dll");
+					copy($installpath . "vc_redist/vcruntime140.dll", $extractpath . "bin/vcruntime140.dll");
 
 					echo "Copying staging files to final location...\n";
 					$result2 = CopyDirectory($extractpath, $installpath . "php");
