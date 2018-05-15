@@ -187,7 +187,7 @@
 	// Apache.
 	if (isset($downloadopts["apache"]))
 	{
-		$url = "http://www.apachelounge.com/download/VC14/";
+		$url = "http://www.apachelounge.com/download/";
 		echo "Detecting latest version of Apache:\n";
 		echo "  " . $url . "\n";
 		echo "Please wait...\n";
@@ -204,8 +204,10 @@
 		$rows = $html->find("a[href]");
 		foreach ($rows as $row)
 		{
-			if (preg_match('/^\/download\/VC14\/binaries\/httpd-(.+)-win32-VC14.zip$/', $row->href, $matches))
+			if (preg_match('/^\/download\/VC15\/binaries\/httpd-(.+)-[Ww]in32-VC15.zip$/', $row->href, $matches))
 			{
+				$matches[1] .= " (VC15)";
+
 				echo "Found:  " . $row->href . "\n";
 				echo "Latest version:  " . $matches[1] . "\n";
 				echo "Currently installed:  " . (isset($installed["apache"]) ? $installed["apache"] : "Not installed") . "\n";
@@ -372,7 +374,7 @@
 		$rows = $html->find("a[href]");
 		foreach ($rows as $row)
 		{
-			if (preg_match('/^\/downloads\/releases\/php-(7\.1\.\d+)-Win32-VC14-x86.zip$/', $row->href, $matches))
+			if (preg_match('/^\/downloads\/releases\/php-(7\.2\.\d+)-Win32-VC15-x86.zip$/', $row->href, $matches))
 			{
 				echo "Found:  " . $row->href . "\n";
 				echo "Latest version:  " . $matches[1] . "\n";
