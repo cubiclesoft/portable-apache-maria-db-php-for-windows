@@ -204,7 +204,7 @@
 		$rows = $html->find("a[href]");
 		foreach ($rows as $row)
 		{
-			if (preg_match('/^\/download\/VC15\/binaries\/httpd-(.+)-[Ww]in32-VC15.zip$/', $row->href, $matches))
+			if (preg_match('/\/VC15\/binaries\/httpd-(.+)-[Ww]in32-VC15.zip$/', $row->href, $matches))
 			{
 				$matches[1] .= " (VC15)";
 
