@@ -374,7 +374,7 @@
 		$rows = $html->find("a[href]");
 		foreach ($rows as $row)
 		{
-			if (preg_match('/^\/downloads\/releases\/php-(7\.2\.\d+)-Win32-VC15-x86.zip$/', $row->href, $matches))
+			if (preg_match('/^\/downloads\/releases\/php-(7\.3\.\d+)-Win32-VC15-x86.zip$/', $row->href, $matches))
 			{
 				echo "Found:  " . $row->href . "\n";
 				echo "Latest version:  " . $matches[1] . "\n";
