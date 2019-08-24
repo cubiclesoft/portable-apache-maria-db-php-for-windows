@@ -187,7 +187,7 @@
 	// Apache.
 	if (isset($downloadopts["apache"]))
 	{
-		$url = "http://www.apachelounge.com/download/";
+		$url = "https://www.apachelounge.com/download/VC15/";
 		echo "Detecting latest version of Apache:\n";
 		echo "  " . $url . "\n";
 		echo "Please wait...\n";
@@ -356,7 +356,7 @@
 	// PHP.
 	if (isset($downloadopts["php"]))
 	{
-		$url = "http://windows.php.net/download/";
+		$url = "https://windows.php.net/download/";
 		echo "\n";
 		echo "Detecting latest version of PHP:\n";
 		echo "  " . $url . "\n";
