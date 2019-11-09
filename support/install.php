@@ -1,6 +1,6 @@
 <?php
 	// Portable Apache, Maria DB, PHP installer.
-	// (C) 2013 CubicleSoft.  All Rights Reserved.
+	// (C) 2019 CubicleSoft.  All Rights Reserved.
 
 	$basepath = str_replace("\\", "/", dirname(dirname(__FILE__))) . "/";
 	$basepath2 = $basepath;
@@ -84,8 +84,14 @@
 			{
 				if (file_exists($basepath . "maria_db/my-default.ini"))  $maria_db_config = "my-default.ini";
 				else if (file_exists($basepath . "maria_db/my-medium.ini"))  $maria_db_config = "my-medium.ini";
+				else
+				{
+					@copy($basepath2 . "support/my-medium.ini", $basepath . "maria_db/my-medium.ini");
+
+					$maria_db_config = "my-medium.ini";
+				}
 			}
-		} while (!file_exists($basepath . "maria_db/" . $maria_db_config));
+		} while (!is_file($basepath . "maria_db/" . $maria_db_config));
 	}
 
 	if (isset($downloadopts["php"]))
