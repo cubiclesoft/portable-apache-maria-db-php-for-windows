@@ -39,6 +39,41 @@ Troubleshooting
 
 Requires 'taskkill.exe' for 'stop_server.bat' to work properly.  This is part of Windows XP and later.
 
+If the PHP module for Apache fails to load or if you want to always have `php.exe` be more conveniently available from the command-line, modifying the system or user PATH environment variable can solve both problems AND create new problems.  On Windows 10, the PATH is inconveniently buried under:  Control Panel -> System -> Advanced system settings -> Environment Variables... -> PATH.  Note that adding paths to the system or user PATH are problematic for other applications that run on the same system, which can result in [DLL hell](https://en.wikipedia.org/wiki/DLL_Hell) and also slow down the overall system.  But adding an item to the PATH can make it easier to run both Apache and `php.exe` from the command-line without having to duplicate a bunch of DLLs when using PECL.
+
+Installing PECL Extensions
+--------------------------
+
+[PECL](https://pecl.php.net/) contains a number of powerful and popular extensions for PHP such as [Xdebug](https://pecl.php.net/package/xdebug), [ImageMagick](https://pecl.php.net/package/imagick), [Redis](https://pecl.php.net/package/redis), etc.  Getting them to work on Windows can be challenging.  The following is a general guide.
+
+Most PECL packages work on Linux hosts since Linux is the defacto server OS in the world and also PECL's native environment.  When a PECL package supports Windows, a little Windows icon plus a "DLL" appears next to it.  There are far fewer packages with Windows support.  The PECL DLLs are precompiled versions for several versions of PHP.  The PECL subsystem automatically builds binaries for Windows when support is declared for those PECL packages.  Whether or not a downloaded compiled DLL actually works with PHP is a completely different issue.
+
+There are typically four flavors of DLL in PECL:  NTS x64, TS x64, NTS x86, and TS x86.  This project currently uses:  32-bit (x86) Thread-safe (TS) PHP.  So the PECL DLLs you want are of the "TS x86" variety.
+
+From a command-line, run `php.exe -v`.  That will provide the current working version and also verify x64 vs x86 PHP.
+
+Downloading the right DLL is only the start.  The next step is to update the `php.ini` and verify that the DLL is set up correctly.  Each extension is different.  PECL extensions generally go into the `php/ext` subdirectory.  There are two areas to update in `php.ini`:
+
+```
+extension_dir = "C:/path/to/php/ext"  <-- If not already uncommented.
+
+...
+
+extension=extname    <-- In general, no .dll
+zend_extention=zendextname  <-- Rare.  Mostly just Xdebug and Zend opcache these days.
+```
+
+For some extensions, you will need additional downloads.  In particular, ImageMagick requires many additional DLLs to function.  The PECL extension only provides the necessary glue between the ImageMagick DLLs, PHP core, and PHP userland (i.e. your PHP-based application).  In addition, you need to match x86/x64 DLLs with PHP.  If you prefer portable software, which you probably do if you are using this project, then you'll need to find a portable flavor of the library that only includes the required DLLs and not an installer.
+
+Some extensions are Zend extensions (e.g. Xdebug) and require a `zend_extension` line instead of `extension` in `php.ini`.  A number of PECL extensions also add `php.ini` options.
+
+From a command-line, run `php.exe -v` again.  That will verify that PHP didn't have any problems loading the extension.  If it does, a dialog box will appear indicating it failed to load and then you have a lot of work ahead of you to determine why it failed.  These tools are your friend:
+
+* [Microsoft SysInternals Process Monitor](https://docs.microsoft.com/en-us/sysinternals/downloads/procmon) - Watching for `php.exe` processes and the DLLs they attempt to load and what paths they attempt to load them from.
+* [Dependencies](https://github.com/lucasg/Dependencies) - Tossing the PECL extension DLL in to see dependency trees and whether or not Windows will be able to load the DLL itself.
+
+The Windows EXE/DLL loader has [complex, broken rules](https://docs.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order) on how it loads DLLs into RAM.  In general, third-party DLLs that the PECL extension depend on (e.g. ImageMagick DLLs) go into the same directory as the running executable OR somewhere on the system/user PATH.  The rules for how the Windows loader works basically invite wrecking a pristine Windows installation.  Knowing how the Windows loader works under the hood will make your life a LOT easier when working with PECL extensions.
+
 Sources
 -------
 
