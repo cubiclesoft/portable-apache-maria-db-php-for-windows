@@ -1,6 +1,6 @@
 <?php
 	// Portable Apache, Maria DB, PHP downloader.
-	// (C) 2013 CubicleSoft.  All Rights Reserved.
+	// (C) 2020 CubicleSoft.  All Rights Reserved.
 
 	if (!isset($forcedownload))  $forcedownload = false;
 
@@ -204,7 +204,7 @@
 		$rows = $html->find("a[href]");
 		foreach ($rows as $row)
 		{
-			if (preg_match('/\/VC15\/binaries\/httpd-(.+)-[Ww]in32-VC15.zip$/', $row->href, $matches))
+			if (preg_match('/\/VC15\/binaries\/httpd-(.+)-[Ww]in64-VC15.zip$/', $row->href, $matches))
 			{
 				$matches[1] .= " (VC15)";
 
@@ -213,7 +213,7 @@
 				echo "Currently installed:  " . (isset($installed["apache"]) ? $installed["apache"] : "Not installed") . "\n";
 				$found = true;
 
-				if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["apache"]) || $matches[1] != $installed["apache"]))
+				if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["apache"]) || $matches[1] != $installed["apache"] || isset($downloadopts["force"])))
 				{
 					DownloadAndExtract("apache", HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row->href));
 
@@ -308,7 +308,7 @@
 				{
 					$filename = trim($row2->plaintext);
 
-					if (preg_match('/^mariadb-(.+)-win32.zip$/', $filename, $matches))
+					if (preg_match('/^mariadb-(.+)-winx64.zip$/', $filename, $matches))
 					{
 						// Automation hates interstitials.  Just go straight to the download.
 						$row2->href = str_replace("/interstitial/", "/f/", $row2->href);
@@ -317,7 +317,7 @@
 						echo "Currently installed:  " . (isset($installed["maria_db"]) ? $installed["maria_db"] : "Not installed") . "\n";
 						$found = true;
 
-						if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["maria_db"]) || $matches[1] != $installed["maria_db"]))
+						if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["maria_db"]) || $matches[1] != $installed["maria_db"] || isset($downloadopts["force"])))
 						{
 							DownloadAndExtract("maria_db", HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row2->href));
 
@@ -374,14 +374,14 @@
 		$rows = $html->find("a[href]");
 		foreach ($rows as $row)
 		{
-			if (preg_match('/^\/downloads\/releases\/php-(7\.3\.\d+)-Win32-VC15-x86.zip$/', $row->href, $matches))
+			if (preg_match('/^\/downloads\/releases\/php-(7\.4\.\d+)-Win32-vc15-x64.zip$/', $row->href, $matches))
 			{
 				echo "Found:  " . $row->href . "\n";
 				echo "Latest version:  " . $matches[1] . "\n";
 				echo "Currently installed:  " . (isset($installed["php"]) ? $installed["php"] : "Not installed") . "\n";
 				$found = true;
 
-				if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["php"]) || $matches[1] != $installed["php"]))
+				if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["php"]) || $matches[1] != $installed["php"] || isset($downloadopts["force"])))
 				{
 					DownloadAndExtract("php", HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row->href));
 

@@ -48,7 +48,7 @@ Installing PECL Extensions
 
 Most PECL packages work on Linux hosts since Linux is the defacto server OS in the world and also PECL's native environment.  When a PECL package supports Windows, a little Windows icon plus a "DLL" appears next to it.  There are far fewer packages with Windows support.  The PECL DLLs are precompiled versions for several versions of PHP.  The PECL subsystem automatically builds binaries for Windows when support is declared for those PECL packages.  Whether or not a downloaded compiled DLL actually works with PHP is a completely different issue.
 
-There are typically four flavors of DLL in PECL:  NTS x64, TS x64, NTS x86, and TS x86.  This project currently uses:  32-bit (x86) Thread-safe (TS) PHP.  So the PECL DLLs you want are of the "TS x86" variety.
+There are typically four flavors of DLL in PECL:  NTS x64, TS x64, NTS x86, and TS x86.  This project currently uses:  64-bit (x64) Thread-safe (TS) PHP.  So the PECL DLLs you want are of the "TS x64" variety.
 
 From a command-line, run `php.exe -v`.  That will provide the current working version and also verify x64 vs x86 PHP.
 
