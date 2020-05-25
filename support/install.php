@@ -126,7 +126,7 @@
 			// Modify the Apache configuration so it can find itself.
 			$data = file_get_contents($basepath2 . "apache/conf/httpd.conf");
 			$lineend = (strpos($data, "\r\n") !== false ? "\r\n" : (strpos($data, "\n") !== false ? "\n" : "\r"));
-			$data = str_replace(array("c:/Apache24/htdocs", "c:/Apache24", "DirectoryIndex index.html", "#ServerName www.example.com:80"), array($apache_docroot, $apache_root, "DirectoryIndex index.html index.php", "ServerName localhost"), $data);
+			$data = str_replace(array("\${SRVROOT}/htdocs", "c:/Apache24", "DirectoryIndex index.html", "#ServerName www.example.com:80"), array($apache_docroot, $apache_root, "DirectoryIndex index.html index.php", "ServerName localhost"), $data);
 			$pos = strpos($data, "LoadModule xml2enc_module modules/mod_xml2enc.so" . $lineend);
 			if ($pos !== false)
 			{
