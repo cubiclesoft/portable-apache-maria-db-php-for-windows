@@ -252,7 +252,7 @@
 	// Maria DB.
 	if (isset($downloadopts["maria_db"]))
 	{
-		$url = "https://downloads.mariadb.org/";
+		$url = "https://downloads.mariadb.org/rest-api/mariadb/";
 		echo "\n";
 		echo "Detecting latest version of Maria DB:\n";
 		echo "  " . $url . "\n";
@@ -263,88 +263,74 @@
 		if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
 		else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
 
-		$baseurl = $result["url"];
+		$data = json_decode($result["body"], true);
+		if (!is_array($data) || !isset($data["major_releases"]))  DownloadFailed("Response data from the MariaDB API was not JSON.");
+
+		// Find the latest stable release.
+		$releaseid = false;
+		foreach ($data["major_releases"] as $release)
+		{
+			if ($release["release_status"] === "Stable")
+			{
+				$releaseid = $release["release_id"];
+			}
+		}
+
+		if ($releaseid === false)  DownloadFailed("Response data from the MariaDB API does not contain a Stable release.");
+
+		$url = "https://downloads.mariadb.org/rest-api/mariadb/" . $releaseid . "/";
+
+		echo "Detecting download:\n";
+		echo "  " . $url . "\n";
+		echo "Please wait...\n";
+		$web = new WebBrowser();
+		$result = $web->Process($url);
+
+		if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
+		else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
+
+		$data = json_decode($result["body"], true);
+		if (!is_array($data) || !isset($data["releases"]))  DownloadFailed("Response data from the MariaDB API was not JSON.");
 
 		$found = false;
-		$html->load($result["body"]);
-		$rows = $html->find("a.btn-success");
-		foreach ($rows as $row)
+		foreach ($data["releases"] as $ver => $verinfo)
 		{
-			if (preg_match("/^\/mariadb\/(.+)\/$/", $row->href, $matches) && stripos((string)$row->plaintext, "Stable") !== false)
+			foreach ($verinfo["files"] as $fileinfo)
 			{
-				$url = HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row->href);
-				echo "Detecting download:\n";
-				echo "  " . $url . "\n";
-				echo "Please wait...\n";
-				$web = new WebBrowser();
-				$result = $web->Process($url);
-
-				if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
-				else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
-
-				$baseurl = $result["url"];
-
-				$html2->load($result["body"]);
-				$row2 = $html2->find("#listing", 0);
-
-				$url = $row2->{"data-file-url"} . "?release=" . $row2->{"data-release"};
-
-				$url = HTTP::ConvertRelativeToAbsoluteURL($baseurl, $url);
-
-				echo "Detecting download:\n";
-				echo "  " . $url . "\n";
-				echo "Please wait...\n";
-				$web = new WebBrowser();
-				$result = $web->Process($url);
-
-				if (!$result["success"])  DownloadFailed("Error retrieving URL.  " . $result["error"]);
-				else if ($result["response"]["code"] != 200)  DownloadFailed("Error retrieving URL.  Server returned:  " . $result["response"]["code"] . " " . $result["response"]["meaning"]);
-
-				$baseurl = $result["url"];
-
-				$html2->load($result["body"]);
-				$rows2 = $html2->find("a[href]");
-				foreach ($rows2 as $row2)
+				if ($fileinfo["file_name"] === "mariadb-" . $ver . "-winx64.zip")
 				{
-					$filename = trim($row2->plaintext);
+					echo "Found:  " . $fileinfo["file_download_url"] . "\n";
+					echo "Latest version:  " . $ver . "\n";
+					echo "Currently installed:  " . (isset($installed["maria_db"]) ? $installed["maria_db"] : "Not installed") . "\n";
+					$found = true;
 
-					if (preg_match('/^mariadb-(.+)-winx64.zip$/', $filename, $matches))
+					if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["maria_db"]) || $ver != $installed["maria_db"] || isset($downloadopts["force"])))
 					{
-						// Automation hates interstitials.  Just go straight to the download.
-						$row2->href = str_replace("/interstitial/", "/f/", $row2->href);
-						echo "Found:  " . $row2->href . "\n";
-						echo "Latest version:  " . $matches[1] . "\n";
-						echo "Currently installed:  " . (isset($installed["maria_db"]) ? $installed["maria_db"] : "Not installed") . "\n";
-						$found = true;
+						DownloadAndExtract("maria_db", $fileinfo["file_download_url"]);
 
-						if ((!defined("CHECK_ONLY") || !CHECK_ONLY) && (!isset($installed["maria_db"]) || $matches[1] != $installed["maria_db"] || isset($downloadopts["force"])))
+						$extractpath = dirname(FindExtractedFile($stagingpath, "COPYING")) . "/";
+						@rename($extractpath . "data", $extractpath . "orig-data");
+
+						echo "Copying staging files to final location...\n";
+						$result2 = CopyDirectory($extractpath, $installpath . "maria_db");
+						if (!$result2["success"])  echo "ERROR:  Unable to copy files from staging to the final location.  Partial upgrade applied.\n" . $result2["error"] . "\n";
+						else
 						{
-							DownloadAndExtract("maria_db", HTTP::ConvertRelativeToAbsoluteURL($baseurl, $row2->href));
+							echo "Cleaning up...\n";
+							ResetStagingArea($stagingpath);
 
-							$extractpath = dirname(FindExtractedFile($stagingpath, "COPYING")) . "/";
-							@rename($extractpath . "data", $extractpath . "orig-data");
+							$installed["maria_db"] = $ver;
+							SaveInstalledData();
 
-							echo "Copying staging files to final location...\n";
-							$result2 = CopyDirectory($extractpath, $installpath . "maria_db");
-							if (!$result2["success"])  echo "ERROR:  Unable to copy files from staging to the final location.  Partial upgrade applied.\n" . $result2["error"] . "\n";
-							else
-							{
-								echo "Cleaning up...\n";
-								ResetStagingArea($stagingpath);
-
-								$installed["maria_db"] = $matches[1];
-								SaveInstalledData();
-
-								echo "Maria DB binaries updated to " . $matches[1] . ".\n";
-							}
+							echo "Maria DB binaries updated to " . $ver . ".\n";
 						}
-
-						break;
 					}
-				}
 
-				break;
+					break;
+				}
 			}
+
+			break;
 		}
 		if (!$found)
 		{
