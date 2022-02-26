@@ -131,7 +131,7 @@
 			if ($pos !== false)
 			{
 				$pos += strlen("LoadModule xml2enc_module modules/mod_xml2enc.so" . $lineend);
-				$data2 = "LoadModule php7_module \"" . $basepath . "php/php7apache2_4.dll\"" . $lineend;
+				$data2 = "LoadModule php_module \"" . $basepath . "php/php8apache2_4.dll\"" . $lineend;
 				$data2 .= "AddHandler application/x-httpd-php .php" . $lineend;
 				$data2 .= $lineend;
 				$data2 .= "PHPIniDir \"" . $basepath . "php\"" . $lineend;
