@@ -204,9 +204,9 @@
 		$rows = $html->find("a[href]");
 		foreach ($rows as $row)
 		{
-			if (preg_match('/\/VS16\/binaries\/httpd-(.+)-[Ww]in64-VS16.zip$/', $row->href, $matches))
+			if (preg_match('/\/VS17\/binaries\/httpd-(.+)-[Ww]in64-VS17.zip$/', $row->href, $matches))
 			{
-				$matches[1] .= " (VS16)";
+				$matches[1] .= " (VS17)";
 
 				echo "Found:  " . $row->href . "\n";
 				echo "Latest version:  " . $matches[1] . "\n";
